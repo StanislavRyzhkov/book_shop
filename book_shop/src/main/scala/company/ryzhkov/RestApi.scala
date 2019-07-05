@@ -1,6 +1,6 @@
 package company.ryzhkov
 
-import akka.actor.{ActorSystem, Props}
+import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
@@ -10,14 +10,14 @@ import akka.util.Timeout
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives._
 import company.ryzhkov.Context._
 import company.ryzhkov.actors.BookService._
+import company.ryzhkov.actors.KeyService.CreateKey
 import company.ryzhkov.actors.OrderService.OrderItem
+import company.ryzhkov.actors.TokenCreator.CreateToken
 import company.ryzhkov.actors.TokenService._
-import company.ryzhkov.actors.{BookService, OrderService, TokenService}
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.util.{Failure, Success}
 
 
 class RestApi(system: ActorSystem) {
@@ -27,12 +27,10 @@ class RestApi(system: ActorSystem) {
   implicit val cartItemFormat = jsonFormat3(OrderItem)
   implicit val tokenFormat = jsonFormat1(Token)
 
-  val route: Route = cors() {allBooks ~ bookById ~ token ~ foo}
-  val bookService = system.actorOf(Props[BookService], "bookService")
-  val cartService = system.actorOf(Props[OrderService], name = "cartService")
-  val tokenService = system.actorOf(Props[TokenService], name = "tokenService")
+  val route: Route = cors() {allBooks ~ bookById ~ token}
 
-  tokenService ! UploadKey
+
+  keyService ! CreateKey
 
   def allBooks = pathPrefix("books") {
     pathEndOrSingleSlash {
@@ -64,71 +62,14 @@ class RestApi(system: ActorSystem) {
           header => {
             header match {
               case Some(token: String) =>
-                val msg = (tokenService ? CheckToken(Token(token))).mapTo[TokenMessage]
-                msg onComplete {
-                  case Success(v) =>
-                    v match {
-                      case TokenOK => complete("OK")
-                      case
-                    }
-                  case Failure(e) => println(e)
-                }
+                val msg = (tokenChecker ? CheckToken(Token(token))).mapTo[TokenMessage]
                 complete("OK")
               case None =>
-                val res = (tokenService ? CreateToken).mapTo[Future[Token]].flatten
+                val res = (tokenCreator ? CreateToken).mapTo[Future[Token]].flatten
                 complete(res)
             }
           }
         }
-      }
-    }
-  }
-
-//  def addToCart = pathPrefix("cart") {
-//    pathEndOrSingleSlash {
-//      post {
-//        entity(as[OrderItem]) {
-//          cartItem => {
-//            optionalHeaderValueByName("Authorization") {
-//              header => {
-//                header match {
-//                  case Some(_: String) => complete("Hello")
-//                  case None =>
-//                    val res = (tokenService ? CreateToken).mapTo[Future[Token]].flatten
-//                    complete(res)
-//                }
-//              }
-//            }
-//          }
-//        }
-//      }
-//    }
-//  }
-
-  def foo = pathPrefix("bar") {
-    pathEndOrSingleSlash {
-      get {
-//        val db = Database.forDataSource(AppDataSource.ds, Some(10))
-//
-//
-//
-//        val aaa = DBIO.seq(
-//          genres.map(g => g.name) += "Лингвистика"
-//        )
-//        val res = db.run(aaa)
-
-
-//        val q = genres
-//        val action = q.result
-//        val result = db.run(action)
-//        result onComplete {
-//          case Success(value) =>
-//            value.foreach(println)
-//        }
-
-
-
-        complete("Hello")
       }
     }
   }

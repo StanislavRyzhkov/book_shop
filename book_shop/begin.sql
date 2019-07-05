@@ -36,10 +36,13 @@ alter table app_book owner to clyde;
 
 create table if not exists app_user(
     id bigserial not null constraint app_user_pkey primary key,
-    username varchar(255) not null,
+    user_uuid varchar(255) not null,
+    username varchar(255),
     email varchar(255),
     passwordHash varchar(255),
-    role varchar(255)
+    role varchar(255),
+    address varchar(255),
+    phone_number varchar(255)
 );
 alter table app_user owner to clyde;
 

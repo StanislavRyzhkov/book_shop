@@ -46,10 +46,13 @@ object Models {
 
   class Users(tag: Tag) extends Table[(Long, String, String, String, String)](tag, "app_user") {
     def id = column[Long]("id", O.PrimaryKey)
+    def userUUID = column[String]("user_uuid")
     def username = column[String]("username")
     def email = column[String]("email")
     def passwordHash = column[String]("passwordhash")
     def role = column[String]("role")
+    def address = column[String]("address")
+    def phoneNumber = column[String]("phone_number")
     def * = (id, username, email, passwordHash, role)
   }
 
