@@ -23,7 +23,7 @@ class KeyService extends Actor {
   implicit val ex = context.dispatcher
 
   override def receive: Receive = {
-    case CreateKey => sender() ! createKey()
+    case CreateKey => createKey()
     case FindKey => sender() ! findKey
   }
 

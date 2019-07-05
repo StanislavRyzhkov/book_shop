@@ -12,7 +12,6 @@ import company.ryzhkov.Context._
 import company.ryzhkov.actors.BookService._
 import company.ryzhkov.actors.KeyService.CreateKey
 import company.ryzhkov.actors.OrderService.OrderItem
-import company.ryzhkov.actors.TokenCreator.CreateToken
 import company.ryzhkov.actors.TokenService._
 import spray.json.DefaultJsonProtocol._
 
@@ -26,6 +25,7 @@ class RestApi(system: ActorSystem) {
   implicit val bookFullInfoFormat = jsonFormat8(BookFullInfo)
   implicit val cartItemFormat = jsonFormat3(OrderItem)
   implicit val tokenFormat = jsonFormat1(Token)
+  implicit val tokenMessageFormat = jsonFormat1(TokenMessage)
 
   val route: Route = cors() {allBooks ~ bookById ~ token}
 
@@ -61,11 +61,11 @@ class RestApi(system: ActorSystem) {
         optionalHeaderValueByName("Authorization") {
           header => {
             header match {
-              case Some(token: String) =>
-                val msg = (tokenChecker ? CheckToken(Token(token))).mapTo[TokenMessage]
-                complete("OK")
+              case Some(value: String) =>
+                val msg = (tokenService ? CheckToken(value)).mapTo[Future[TokenMessage]].flatten
+                complete(msg)
               case None =>
-                val res = (tokenCreator ? CreateToken).mapTo[Future[Token]].flatten
+                val res = (tokenService ? CreateToken).mapTo[Future[Token]].flatten
                 complete(res)
             }
           }
